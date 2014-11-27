@@ -439,6 +439,7 @@ in_data = \
 	data/valid-config-files/debug-allow-all.conf.in \
 	data/valid-config-files/finite-timeout.conf.in \
 	data/valid-config-files/forbidding.conf.in \
+	data/valid-config-files/debug-check-some.conf.in \
 	data/valid-config-files/incoming-limit.conf.in \
 	data/valid-config-files/max-completed-connections.conf.in \
 	data/valid-config-files/max-connections-per-user.conf.in \

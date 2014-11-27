@@ -1788,14 +1788,15 @@ bus_activation_activate_service (BusActivation  *activation,
 
   if (auto_activation &&
       entry != NULL &&
-      !bus_context_check_security_policy (activation->context,
+      BUS_RESULT_TRUE != bus_context_check_security_policy (activation->context,
         transaction,
         connection, /* sender */
         NULL, /* addressed recipient */
         NULL, /* proposed recipient */
         activation_message,
         entry,
-        error))
+        error,
+        NULL))
     {
       _DBUS_ASSERT_ERROR_IS_SET (error);
       _dbus_verbose ("activation not authorized: %s: %s\n",

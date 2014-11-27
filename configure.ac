@@ -1770,6 +1770,17 @@ AC_ARG_ENABLE([user-session],
 AM_CONDITIONAL([DBUS_ENABLE_USER_SESSION],
   [test "x$enable_user_session" = xyes])
 
+#enable cynara integration
+AC_ARG_ENABLE([cynara], [AS_HELP_STRING([--enable-cynara], [enable Cynara integration])], [], [enable_cynara=no])
+if test "x$enable_cynara" = xyes; then
+  PKG_CHECK_MODULES([CYNARA], [cynara-client-async >= 0.6.0 cynara-session >= 0.6.0],
+     [AC_DEFINE([DBUS_ENABLE_CYNARA], [1], [Define to enable Cynara privilege checks in dbus-daemon])],
+     [AC_MSG_ERROR([libcynara-client-async and cynara-session are required to enable Cynara integration])])
+fi
+
+AC_SUBST([CYNARA_CFLAGS])
+AC_SUBST([CYNARA_LIBS])
+
 AC_CONFIG_FILES([
 Doxyfile
 dbus/Version
@@ -1852,6 +1863,7 @@ echo "
         Building bus stats API:   ${enable_stats}
         Building SELinux support: ${have_selinux}
         Building AppArmor support: ${have_apparmor}
+        Building Cynara support:  ${enable_cynara}
         Building inotify support: ${have_inotify}
         Building kqueue support:  ${have_kqueue}
         Building systemd support: ${have_systemd}
