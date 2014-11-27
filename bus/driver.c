@@ -420,7 +420,7 @@ create_unique_client_name (BusRegistry *registry,
   return TRUE;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_hello (DBusConnection *connection,
                          BusTransaction *transaction,
                          DBusMessage    *message,
@@ -428,7 +428,7 @@ bus_driver_handle_hello (DBusConnection *connection,
 {
   DBusString unique_name;
   BusService *service;
-  dbus_bool_t retval;
+  BusResult retval;
   BusRegistry *registry;
   BusConnections *connections;
   DBusError tmp_error;
@@ -442,7 +442,7 @@ bus_driver_handle_hello (DBusConnection *connection,
       /* We already handled an Hello message for this connection. */
       dbus_set_error (error, DBUS_ERROR_FAILED,
                       "Already handled an Hello message");
-      return FALSE;
+      return BUS_RESULT_FALSE;
     }
 
   /* Note that when these limits are exceeded we don't disconnect the
@@ -464,16 +464,16 @@ bus_driver_handle_hello (DBusConnection *connection,
       bus_context_log (context, DBUS_SYSTEM_LOG_WARNING, "%s (%s=%d)",
           tmp_error.message, limit_name, limit);
       dbus_move_error (&tmp_error, error);
-      return FALSE;
+      return BUS_RESULT_FALSE;
     }
 
   if (!_dbus_string_init (&unique_name))
     {
       BUS_SET_OOM (error);
-      return FALSE;
+      return BUS_RESULT_FALSE;
     }
 
-  retval = FALSE;
+  retval = BUS_RESULT_FALSE;
 
   registry = bus_connection_get_registry (connection);
 
@@ -506,7 +506,7 @@ bus_driver_handle_hello (DBusConnection *connection,
     goto out_0;
 
   _dbus_assert (bus_connection_is_active (connection));
-  retval = TRUE;
+  retval = BUS_RESULT_TRUE;
 
  out_0:
   _dbus_string_free (&unique_name);
@@ -558,7 +558,7 @@ bus_driver_send_welcome_message (DBusConnection *connection,
     }
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_list_services (DBusConnection *connection,
                                  BusTransaction *transaction,
                                  DBusMessage    *message,
@@ -580,14 +580,14 @@ bus_driver_handle_list_services (DBusConnection *connection,
   if (reply == NULL)
     {
       BUS_SET_OOM (error);
-      return FALSE;
+      return BUS_RESULT_FALSE;
     }
 
   if (!bus_registry_list_services (registry, &services, &len))
     {
       dbus_message_unref (reply);
       BUS_SET_OOM (error);
-      return FALSE;
+      return BUS_RESULT_FALSE;
     }
 
   dbus_message_iter_init_append (reply, &iter);
@@ -599,7 +599,7 @@ bus_driver_handle_list_services (DBusConnection *connection,
       dbus_free_string_array (services);
       dbus_message_unref (reply);
       BUS_SET_OOM (error);
-      return FALSE;
+      return BUS_RESULT_FALSE;
     }
 
   {
@@ -611,7 +611,7 @@ bus_driver_handle_list_services (DBusConnection *connection,
         dbus_free_string_array (services);
         dbus_message_unref (reply);
         BUS_SET_OOM (error);
-        return FALSE;
+        return BUS_RESULT_FALSE;
       }
   }
 
@@ -624,7 +624,7 @@ bus_driver_handle_list_services (DBusConnection *connection,
           dbus_free_string_array (services);
           dbus_message_unref (reply);
           BUS_SET_OOM (error);
-          return FALSE;
+          return BUS_RESULT_FALSE;
         }
       ++i;
     }
@@ -635,23 +635,23 @@ bus_driver_handle_list_services (DBusConnection *connection,
     {
       dbus_message_unref (reply);
       BUS_SET_OOM (error);
-      return FALSE;
+      return BUS_RESULT_FALSE;
     }
 
   if (!bus_transaction_send_from_driver (transaction, connection, reply))
     {
       dbus_message_unref (reply);
       BUS_SET_OOM (error);
-      return FALSE;
+      return BUS_RESULT_FALSE;
     }
   else
     {
       dbus_message_unref (reply);
-      return TRUE;
+      return BUS_RESULT_TRUE;
     }
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_list_activatable_services (DBusConnection *connection,
 					     BusTransaction *transaction,
 					     DBusMessage    *message,
@@ -673,14 +673,14 @@ bus_driver_handle_list_activatable_services (DBusConnection *connection,
   if (reply == NULL)
     {
       BUS_SET_OOM (error);
-      return FALSE;
+      return BUS_RESULT_FALSE;
     }
 
   if (!bus_activation_list_services (activation, &services, &len))
     {
       dbus_message_unref (reply);
       BUS_SET_OOM (error);
-      return FALSE;
+      return BUS_RESULT_FALSE;
     }
 
   dbus_message_iter_init_append (reply, &iter);
@@ -692,7 +692,7 @@ bus_driver_handle_list_activatable_services (DBusConnection *connection,
       dbus_free_string_array (services);
       dbus_message_unref (reply);
       BUS_SET_OOM (error);
-      return FALSE;
+      return BUS_RESULT_FALSE;
     }
 
   {
@@ -704,7 +704,7 @@ bus_driver_handle_list_activatable_services (DBusConnection *connection,
 	dbus_free_string_array (services);
 	dbus_message_unref (reply);
 	BUS_SET_OOM (error);
-	return FALSE;
+	return BUS_RESULT_FALSE;
       }
   }
 
@@ -717,7 +717,7 @@ bus_driver_handle_list_activatable_services (DBusConnection *connection,
 	  dbus_free_string_array (services);
 	  dbus_message_unref (reply);
 	  BUS_SET_OOM (error);
-	  return FALSE;
+	  return BUS_RESULT_FALSE;
 	}
       ++i;
     }
@@ -728,23 +728,23 @@ bus_driver_handle_list_activatable_services (DBusConnection *connection,
     {
       dbus_message_unref (reply);
       BUS_SET_OOM (error);
-      return FALSE;
+      return BUS_RESULT_FALSE;
     }
 
   if (!bus_transaction_send_from_driver (transaction, connection, reply))
     {
       dbus_message_unref (reply);
       BUS_SET_OOM (error);
-      return FALSE;
+      return BUS_RESULT_FALSE;
     }
   else
     {
       dbus_message_unref (reply);
-      return TRUE;
+      return BUS_RESULT_TRUE;
     }
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_acquire_service (DBusConnection *connection,
                                    BusTransaction *transaction,
                                    DBusMessage    *message,
@@ -755,7 +755,8 @@ bus_driver_handle_acquire_service (DBusConnection *connection,
   const char *name;
   dbus_uint32_t service_reply;
   dbus_uint32_t flags;
-  dbus_bool_t retval;
+  BusResult retval;
+  BusResult res;
   BusRegistry *registry;
 
   _DBUS_ASSERT_ERROR_IS_CLEAR (error);
@@ -766,20 +767,24 @@ bus_driver_handle_acquire_service (DBusConnection *connection,
                               DBUS_TYPE_STRING, &name,
                               DBUS_TYPE_UINT32, &flags,
                               DBUS_TYPE_INVALID))
-    return FALSE;
+    return BUS_RESULT_FALSE;
 
   _dbus_verbose ("Trying to own name %s with flags 0x%x\n", name, flags);
 
-  retval = FALSE;
+  retval = BUS_RESULT_FALSE;
   reply = NULL;
 
   _dbus_string_init_const (&service_name, name);
 
-  if (!bus_registry_acquire_service (registry, connection,
-                                     &service_name, flags,
-                                     &service_reply, transaction,
-                                     error))
-    goto out;
+  res = bus_registry_acquire_service (registry, connection, message,
+                                       &service_name, flags,
+                                       &service_reply, transaction,
+                                       error);
+  if (res != BUS_RESULT_TRUE)
+    {
+      retval = res;
+      goto out;
+    }
 
   reply = dbus_message_new_method_return (message);
   if (reply == NULL)
@@ -800,7 +805,7 @@ bus_driver_handle_acquire_service (DBusConnection *connection,
       goto out;
     }
 
-  retval = TRUE;
+  retval = BUS_RESULT_TRUE;
 
  out:
   if (reply)
@@ -808,7 +813,7 @@ bus_driver_handle_acquire_service (DBusConnection *connection,
   return retval;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_release_service (DBusConnection *connection,
                                    BusTransaction *transaction,
                                    DBusMessage    *message,
@@ -818,7 +823,7 @@ bus_driver_handle_release_service (DBusConnection *connection,
   DBusString service_name;
   const char *name;
   dbus_uint32_t service_reply;
-  dbus_bool_t retval;
+  BusResult retval;
   BusRegistry *registry;
 
   _DBUS_ASSERT_ERROR_IS_CLEAR (error);
@@ -828,11 +833,11 @@ bus_driver_handle_release_service (DBusConnection *connection,
   if (!dbus_message_get_args (message, error,
                               DBUS_TYPE_STRING, &name,
                               DBUS_TYPE_INVALID))
-    return FALSE;
+    return BUS_RESULT_FALSE;
 
   _dbus_verbose ("Trying to release name %s\n", name);
 
-  retval = FALSE;
+  retval = BUS_RESULT_FALSE;
   reply = NULL;
 
   _dbus_string_init_const (&service_name, name);
@@ -861,7 +866,7 @@ bus_driver_handle_release_service (DBusConnection *connection,
       goto out;
     }
 
-  retval = TRUE;
+  retval = BUS_RESULT_TRUE;
 
  out:
   if (reply)
@@ -869,7 +874,7 @@ bus_driver_handle_release_service (DBusConnection *connection,
   return retval;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_service_exists (DBusConnection *connection,
                                   BusTransaction *transaction,
                                   DBusMessage    *message,
@@ -880,7 +885,7 @@ bus_driver_handle_service_exists (DBusConnection *connection,
   BusService *service;
   dbus_bool_t service_exists;
   const char *name;
-  dbus_bool_t retval;
+  BusResult retval;
   BusRegistry *registry;
 
   _DBUS_ASSERT_ERROR_IS_CLEAR (error);
@@ -890,9 +895,9 @@ bus_driver_handle_service_exists (DBusConnection *connection,
   if (!dbus_message_get_args (message, error,
                               DBUS_TYPE_STRING, &name,
                               DBUS_TYPE_INVALID))
-    return FALSE;
+    return BUS_RESULT_FALSE;
 
-  retval = FALSE;
+  retval = BUS_RESULT_FALSE;
 
   if (strcmp (name, DBUS_SERVICE_DBUS) == 0)
     {
@@ -926,7 +931,7 @@ bus_driver_handle_service_exists (DBusConnection *connection,
       goto out;
     }
 
-  retval = TRUE;
+  retval = BUS_RESULT_TRUE;
 
  out:
   if (reply)
@@ -935,7 +940,7 @@ bus_driver_handle_service_exists (DBusConnection *connection,
   return retval;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_activate_service (DBusConnection *connection,
                                     BusTransaction *transaction,
                                     DBusMessage    *message,
@@ -943,7 +948,7 @@ bus_driver_handle_activate_service (DBusConnection *connection,
 {
   dbus_uint32_t flags;
   const char *name;
-  dbus_bool_t retval;
+  BusResult retval;
   BusActivation *activation;
 
   _DBUS_ASSERT_ERROR_IS_CLEAR (error);
@@ -957,10 +962,10 @@ bus_driver_handle_activate_service (DBusConnection *connection,
     {
       _DBUS_ASSERT_ERROR_IS_SET (error);
       _dbus_verbose ("No memory to get arguments to StartServiceByName\n");
-      return FALSE;
+      return BUS_RESULT_FALSE;
     }
 
-  retval = FALSE;
+  retval = BUS_RESULT_FALSE;
 
   if (!bus_activation_activate_service (activation, connection, transaction, FALSE,
                                         message, name, error))
@@ -970,7 +975,7 @@ bus_driver_handle_activate_service (DBusConnection *connection,
       goto out;
     }
 
-  retval = TRUE;
+  retval = BUS_RESULT_TRUE;
 
  out:
   return retval;
@@ -1072,13 +1077,13 @@ bus_driver_send_or_activate (BusTransaction *transaction,
   return TRUE;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_update_activation_environment (DBusConnection *connection,
                                                  BusTransaction *transaction,
                                                  DBusMessage    *message,
                                                  DBusError      *error)
 {
-  dbus_bool_t retval;
+  BusResult retval;
   BusActivation *activation;
   BusContext *context;
   DBusMessageIter iter;
@@ -1100,7 +1105,7 @@ bus_driver_handle_update_activation_environment (DBusConnection *connection,
       dbus_set_error (error, DBUS_ERROR_ACCESS_DENIED,
                       "Cannot change activation environment "
                       "on a system bus.");
-      return FALSE;
+      return BUS_RESULT_FALSE;
     }
 
   activation = bus_connection_get_activation (connection);
@@ -1114,7 +1119,7 @@ bus_driver_handle_update_activation_environment (DBusConnection *connection,
 
   dbus_message_iter_recurse (&iter, &dict_iter);
 
-  retval = FALSE;
+  retval = BUS_RESULT_FALSE;
   systemd_message = NULL;
 
   /* Then loop through the sent dictionary, add the location of
@@ -1279,7 +1284,7 @@ bus_driver_handle_update_activation_environment (DBusConnection *connection,
   if (!bus_driver_send_ack_reply (connection, transaction, message, error))
     goto out;
 
-  retval = TRUE;
+  retval = BUS_RESULT_TRUE;
 
  out:
   if (systemd_message != NULL)
@@ -1289,7 +1294,7 @@ bus_driver_handle_update_activation_environment (DBusConnection *connection,
   return retval;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_add_match (DBusConnection *connection,
                              BusTransaction *transaction,
                              DBusMessage    *message,
@@ -1371,16 +1376,16 @@ bus_driver_handle_add_match (DBusConnection *connection,
 
   bus_match_rule_unref (rule);
 
-  return TRUE;
+  return BUS_RESULT_TRUE;
 
  failed:
   _DBUS_ASSERT_ERROR_IS_SET (error);
   if (rule)
     bus_match_rule_unref (rule);
-  return FALSE;
+  return BUS_RESULT_FALSE;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_remove_match (DBusConnection *connection,
                                 BusTransaction *transaction,
                                 DBusMessage    *message,
@@ -1423,16 +1428,16 @@ bus_driver_handle_remove_match (DBusConnection *connection,
 
   bus_match_rule_unref (rule);
 
-  return TRUE;
+  return BUS_RESULT_TRUE;
 
  failed:
   _DBUS_ASSERT_ERROR_IS_SET (error);
   if (rule)
     bus_match_rule_unref (rule);
-  return FALSE;
+  return BUS_RESULT_FALSE;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_get_service_owner (DBusConnection *connection,
 				     BusTransaction *transaction,
 				     DBusMessage    *message,
@@ -1502,7 +1507,7 @@ bus_driver_handle_get_service_owner (DBusConnection *connection,
 
   dbus_message_unref (reply);
 
-  return TRUE;
+  return BUS_RESULT_TRUE;
 
  oom:
   BUS_SET_OOM (error);
@@ -1511,10 +1516,10 @@ bus_driver_handle_get_service_owner (DBusConnection *connection,
   _DBUS_ASSERT_ERROR_IS_SET (error);
   if (reply)
     dbus_message_unref (reply);
-  return FALSE;
+  return BUS_RESULT_FALSE;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_list_queued_owners (DBusConnection *connection,
 				      BusTransaction *transaction,
 				      DBusMessage    *message,
@@ -1606,7 +1611,7 @@ bus_driver_handle_list_queued_owners (DBusConnection *connection,
 
   dbus_message_unref (reply);
 
-  return TRUE;
+  return BUS_RESULT_TRUE;
 
  oom:
   BUS_SET_OOM (error);
@@ -1619,10 +1624,10 @@ bus_driver_handle_list_queued_owners (DBusConnection *connection,
   if (base_names)
     _dbus_list_clear (&base_names);
 
-  return FALSE;
+  return BUS_RESULT_FALSE;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_get_connection_unix_user (DBusConnection *connection,
                                             BusTransaction *transaction,
                                             DBusMessage    *message,
@@ -1679,7 +1684,7 @@ bus_driver_handle_get_connection_unix_user (DBusConnection *connection,
 
   dbus_message_unref (reply);
 
-  return TRUE;
+  return BUS_RESULT_TRUE;
 
  oom:
   BUS_SET_OOM (error);
@@ -1688,10 +1693,10 @@ bus_driver_handle_get_connection_unix_user (DBusConnection *connection,
   _DBUS_ASSERT_ERROR_IS_SET (error);
   if (reply)
     dbus_message_unref (reply);
-  return FALSE;
+  return BUS_RESULT_FALSE;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_get_connection_unix_process_id (DBusConnection *connection,
 						  BusTransaction *transaction,
 						  DBusMessage    *message,
@@ -1748,7 +1753,7 @@ bus_driver_handle_get_connection_unix_process_id (DBusConnection *connection,
 
   dbus_message_unref (reply);
 
-  return TRUE;
+  return BUS_RESULT_TRUE;
 
  oom:
   BUS_SET_OOM (error);
@@ -1757,10 +1762,10 @@ bus_driver_handle_get_connection_unix_process_id (DBusConnection *connection,
   _DBUS_ASSERT_ERROR_IS_SET (error);
   if (reply)
     dbus_message_unref (reply);
-  return FALSE;
+  return BUS_RESULT_FALSE;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_get_adt_audit_session_data (DBusConnection *connection,
 					      BusTransaction *transaction,
 					      DBusMessage    *message,
@@ -1811,7 +1816,7 @@ bus_driver_handle_get_adt_audit_session_data (DBusConnection *connection,
 
   dbus_message_unref (reply);
 
-  return TRUE;
+  return BUS_RESULT_TRUE;
 
  oom:
   BUS_SET_OOM (error);
@@ -1820,10 +1825,10 @@ bus_driver_handle_get_adt_audit_session_data (DBusConnection *connection,
   _DBUS_ASSERT_ERROR_IS_SET (error);
   if (reply)
     dbus_message_unref (reply);
-  return FALSE;
+  return BUS_RESULT_FALSE;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_get_connection_selinux_security_context (DBusConnection *connection,
 							   BusTransaction *transaction,
 							   DBusMessage    *message,
@@ -1872,7 +1877,7 @@ bus_driver_handle_get_connection_selinux_security_context (DBusConnection *conne
 
   dbus_message_unref (reply);
 
-  return TRUE;
+  return BUS_RESULT_TRUE;
 
  oom:
   BUS_SET_OOM (error);
@@ -1881,10 +1886,10 @@ bus_driver_handle_get_connection_selinux_security_context (DBusConnection *conne
   _DBUS_ASSERT_ERROR_IS_SET (error);
   if (reply)
     dbus_message_unref (reply);
-  return FALSE;
+  return BUS_RESULT_FALSE;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_get_connection_credentials (DBusConnection *connection,
                                               BusTransaction *transaction,
                                               DBusMessage    *message,
@@ -1998,7 +2003,7 @@ bus_driver_handle_get_connection_credentials (DBusConnection *connection,
 
   dbus_message_unref (reply);
 
-  return TRUE;
+  return BUS_RESULT_TRUE;
 
  oom:
   BUS_SET_OOM (error);
@@ -2012,10 +2017,10 @@ bus_driver_handle_get_connection_credentials (DBusConnection *connection,
       dbus_message_unref (reply);
     }
 
-  return FALSE;
+  return BUS_RESULT_FALSE;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_reload_config (DBusConnection *connection,
 				 BusTransaction *transaction,
 				 DBusMessage    *message,
@@ -2040,7 +2045,7 @@ bus_driver_handle_reload_config (DBusConnection *connection,
     goto oom;
 
   dbus_message_unref (reply);
-  return TRUE;
+  return BUS_RESULT_TRUE;
 
  oom:
   BUS_SET_OOM (error);
@@ -2049,11 +2054,11 @@ bus_driver_handle_reload_config (DBusConnection *connection,
   _DBUS_ASSERT_ERROR_IS_SET (error);
   if (reply)
     dbus_message_unref (reply);
-  return FALSE;
+  return BUS_RESULT_FALSE;
 }
 
 #ifdef DBUS_ENABLE_VERBOSE_MODE
-static dbus_bool_t
+static BusResult
 bus_driver_handle_enable_verbose (DBusConnection *connection,
                                   BusTransaction *transaction,
                                   DBusMessage    *message,
@@ -2073,7 +2078,7 @@ bus_driver_handle_enable_verbose (DBusConnection *connection,
     _dbus_set_verbose(TRUE);
 
     dbus_message_unref (reply);
-    return TRUE;
+    return BUS_RESULT_TRUE;
 
    oom:
     _DBUS_ASSERT_ERROR_IS_CLEAR (error);
@@ -2082,10 +2087,10 @@ bus_driver_handle_enable_verbose (DBusConnection *connection,
 
     if (reply)
       dbus_message_unref (reply);
-    return FALSE;
+    return BUS_RESULT_FALSE;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_disable_verbose (DBusConnection *connection,
                                    BusTransaction *transaction,
                                    DBusMessage    *message,
@@ -2105,7 +2110,7 @@ bus_driver_handle_disable_verbose (DBusConnection *connection,
     _dbus_set_verbose(FALSE);
 
     dbus_message_unref (reply);
-    return TRUE;
+    return BUS_RESULT_TRUE;
 
    oom:
     _DBUS_ASSERT_ERROR_IS_CLEAR (error);
@@ -2114,11 +2119,11 @@ bus_driver_handle_disable_verbose (DBusConnection *connection,
 
     if (reply)
       dbus_message_unref (reply);
-    return FALSE;
+    return BUS_RESULT_FALSE;
 }
 #endif
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_get_id (DBusConnection *connection,
                           BusTransaction *transaction,
                           DBusMessage    *message,
@@ -2134,7 +2139,7 @@ bus_driver_handle_get_id (DBusConnection *connection,
   if (!_dbus_string_init (&uuid))
     {
       BUS_SET_OOM (error);
-      return FALSE;
+      return BUS_RESULT_FALSE;
     }
 
   reply = NULL;
@@ -2160,7 +2165,7 @@ bus_driver_handle_get_id (DBusConnection *connection,
 
   _dbus_string_free (&uuid);
   dbus_message_unref (reply);
-  return TRUE;
+  return BUS_RESULT_TRUE;
 
  oom:
   _DBUS_ASSERT_ERROR_IS_CLEAR (error);
@@ -2170,10 +2175,10 @@ bus_driver_handle_get_id (DBusConnection *connection,
   if (reply)
     dbus_message_unref (reply);
   _dbus_string_free (&uuid);
-  return FALSE;
+  return BUS_RESULT_FALSE;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_become_monitor (DBusConnection *connection,
                                   BusTransaction *transaction,
                                   DBusMessage    *message,
@@ -2189,7 +2194,7 @@ bus_driver_handle_become_monitor (DBusConnection *connection,
   int i;
   int n_match_rules;
   dbus_uint32_t flags;
-  dbus_bool_t ret = FALSE;
+  BusResult ret = BUS_RESULT_FALSE;
 
   _DBUS_ASSERT_ERROR_IS_CLEAR (error);
 
@@ -2262,10 +2267,10 @@ bus_driver_handle_become_monitor (DBusConnection *connection,
   if (!bus_connection_be_monitor (connection, transaction, &rules, error))
     goto out;
 
-  ret = TRUE;
+  ret = BUS_RESULT_TRUE;
 
 out:
-  if (ret)
+  if (ret == BUS_RESULT_TRUE)
     _DBUS_ASSERT_ERROR_IS_CLEAR (error);
   else
     _DBUS_ASSERT_ERROR_IS_SET (error);
@@ -2281,7 +2286,7 @@ out:
   return ret;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_get_machine_id (DBusConnection *connection,
                                   BusTransaction *transaction,
                                   DBusMessage *message,
@@ -2296,7 +2301,7 @@ bus_driver_handle_get_machine_id (DBusConnection *connection,
   if (!_dbus_string_init (&uuid))
     {
       BUS_SET_OOM (error);
-      return FALSE;
+      return BUS_RESULT_FALSE;
     }
 
   if (!_dbus_get_local_machine_uuid_encoded (&uuid, error))
@@ -2321,7 +2326,7 @@ bus_driver_handle_get_machine_id (DBusConnection *connection,
 
   _dbus_string_free (&uuid);
   dbus_message_unref (reply);
-  return TRUE;
+  return BUS_RESULT_TRUE;
 
 oom:
   _DBUS_ASSERT_ERROR_IS_CLEAR (error);
@@ -2335,29 +2340,30 @@ fail:
     dbus_message_unref (reply);
 
   _dbus_string_free (&uuid);
-  return FALSE;
+  return BUS_RESULT_FALSE;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_ping (DBusConnection *connection,
                         BusTransaction *transaction,
                         DBusMessage *message,
                         DBusError *error)
 {
-  return bus_driver_send_ack_reply (connection, transaction, message, error);
+  return bus_driver_send_ack_reply (connection, transaction, message, error) == TRUE
+               ? BUS_RESULT_TRUE : BUS_RESULT_FALSE;
 }
 
-static dbus_bool_t bus_driver_handle_get (DBusConnection *connection,
+static BusResult bus_driver_handle_get (DBusConnection *connection,
                                           BusTransaction *transaction,
                                           DBusMessage *message,
                                           DBusError *error);
 
-static dbus_bool_t bus_driver_handle_get_all (DBusConnection *connection,
+static BusResult bus_driver_handle_get_all (DBusConnection *connection,
                                               BusTransaction *transaction,
                                               DBusMessage *message,
                                               DBusError *error);
 
-static dbus_bool_t bus_driver_handle_set (DBusConnection *connection,
+static BusResult bus_driver_handle_set (DBusConnection *connection,
                                           BusTransaction *transaction,
                                           DBusMessage *message,
                                           DBusError *error);
@@ -2389,10 +2395,10 @@ typedef struct
   const char *name;
   const char *in_args;
   const char *out_args;
-  dbus_bool_t (* handler) (DBusConnection *connection,
-                           BusTransaction *transaction,
-                           DBusMessage    *message,
-                           DBusError      *error);
+  BusResult (* handler) (DBusConnection *connection,
+                         BusTransaction *transaction,
+                         DBusMessage    *message,
+                         DBusError      *error);
   MethodFlags flags;
 } MessageHandler;
 
@@ -2511,7 +2517,7 @@ static const PropertyHandler dbus_property_handlers[] = {
   { NULL, NULL, NULL }
 };
 
-static dbus_bool_t bus_driver_handle_introspect (DBusConnection *,
+static BusResult bus_driver_handle_introspect (DBusConnection *,
     BusTransaction *, DBusMessage *, DBusError *);
 
 static const MessageHandler properties_message_handlers[] = {
@@ -2763,7 +2769,7 @@ bus_driver_generate_introspect_string (DBusString *xml,
   return TRUE;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_introspect (DBusConnection *connection,
                               BusTransaction *transaction,
                               DBusMessage    *message,
@@ -2784,13 +2790,13 @@ bus_driver_handle_introspect (DBusConnection *connection,
 			       DBUS_TYPE_INVALID))
     {
       _DBUS_ASSERT_ERROR_IS_SET (error);
-      return FALSE;
+      return BUS_RESULT_FALSE;
     }
 
   if (!_dbus_string_init (&xml))
     {
       BUS_SET_OOM (error);
-      return FALSE;
+      return BUS_RESULT_FALSE;
     }
 
   is_canonical_path = dbus_message_has_path (message, DBUS_PATH_DBUS);
@@ -2815,7 +2821,7 @@ bus_driver_handle_introspect (DBusConnection *connection,
   dbus_message_unref (reply);
   _dbus_string_free (&xml);
 
-  return TRUE;
+  return BUS_RESULT_TRUE;
 
  oom:
   BUS_SET_OOM (error);
@@ -2825,10 +2831,42 @@ bus_driver_handle_introspect (DBusConnection *connection,
 
   _dbus_string_free (&xml);
 
-  return FALSE;
+  return BUS_RESULT_FALSE;
 }
 
+/*
+ * Set @error and return FALSE if the message is not directed to the
+ * dbus-daemon by its canonical object path. This is hardening against
+ * system services with poorly-written security policy files, which
+ * might allow sending dangerously broad equivalence classes of messages
+ * such as "anything with this assumed-to-be-safe object path".
+ *
+ * dbus-daemon is unusual in that it normally ignores the object path
+ * of incoming messages; we need to keep that behaviour for the "read"
+ * read-only method calls like GetConnectionUnixUser for backwards
+ * compatibility, but it seems safer to be more restrictive for things
+ * intended to be root-only or privileged-developers-only.
+ *
+ * It is possible that there are other system services with the same
+ * quirk as dbus-daemon.
+ */
 dbus_bool_t
+bus_driver_check_message_is_for_us (DBusMessage *message,
+                                    DBusError   *error)
+{
+  if (!dbus_message_has_path (message, DBUS_PATH_DBUS))
+    {
+      dbus_set_error (error, DBUS_ERROR_ACCESS_DENIED,
+          "Method '%s' is only available at the canonical object path '%s'",
+          dbus_message_get_member (message), DBUS_PATH_DBUS);
+
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+BusResult
 bus_driver_handle_message (DBusConnection *connection,
                            BusTransaction *transaction,
 			   DBusMessage    *message,
@@ -2839,6 +2877,7 @@ bus_driver_handle_message (DBusConnection *connection,
   const MessageHandler *mh;
   dbus_bool_t found_interface = FALSE;
   dbus_bool_t is_canonical_path;
+  BusResult res;
 
   _DBUS_ASSERT_ERROR_IS_CLEAR (error);
 
@@ -2854,7 +2893,7 @@ bus_driver_handle_message (DBusConnection *connection,
                                                   transaction,
                                                   message,
                                                   error))
-        return FALSE;
+        return BUS_RESULT_FALSE;
 
       context = bus_connection_get_context (connection);
       systemd = bus_driver_get_owner_of_name (connection,
@@ -2871,7 +2910,7 @@ bus_driver_handle_message (DBusConnection *connection,
                            attacker ? attacker : "(unauthenticated)",
                            bus_connection_get_loginfo (connection));
           /* ignore it */
-          return TRUE;
+          return BUS_RESULT_TRUE;
         }
 
       if (!bus_context_get_systemd_activation (context))
@@ -2879,16 +2918,16 @@ bus_driver_handle_message (DBusConnection *connection,
           bus_context_log (context, DBUS_SYSTEM_LOG_WARNING,
                            "Ignoring unexpected ActivationFailure message "
                            "while not using systemd activation");
-          return FALSE;
+          return BUS_RESULT_FALSE;
         }
 
-      return dbus_activation_systemd_failure(bus_context_get_activation(context), message);
+      return dbus_activation_systemd_failure(bus_context_get_activation(context), message) == TRUE ? BUS_RESULT_TRUE : BUS_RESULT_FALSE;
     }
 
   if (dbus_message_get_type (message) != DBUS_MESSAGE_TYPE_METHOD_CALL)
     {
       _dbus_verbose ("Driver got a non-method-call message, ignoring\n");
-      return TRUE; /* we just ignore this */
+      return BUS_RESULT_TRUE; /* we just ignore this */
     }
 
   /* may be NULL, which means "any interface will do" */
@@ -2953,20 +2992,27 @@ bus_driver_handle_message (DBusConnection *connection,
                               name, dbus_message_get_signature (message),
                               mh->in_args);
               _DBUS_ASSERT_ERROR_IS_SET (error);
-              return FALSE;
+              return BUS_RESULT_FALSE;
             }
 
-          if ((* mh->handler) (connection, transaction, message, error))
+          res = (* mh->handler) (connection, transaction, message, error);
+          if (res == BUS_RESULT_TRUE)
             {
               _DBUS_ASSERT_ERROR_IS_CLEAR (error);
               _dbus_verbose ("Driver handler succeeded\n");
-              return TRUE;
+              return BUS_RESULT_TRUE;
             }
-          else
+          else if (res == BUS_RESULT_FALSE)
             {
               _DBUS_ASSERT_ERROR_IS_SET (error);
               _dbus_verbose ("Driver handler returned failure\n");
-              return FALSE;
+              return BUS_RESULT_FALSE;
+            }
+          else if (res == BUS_RESULT_LATER)
+            {
+              _DBUS_ASSERT_ERROR_IS_CLEAR (error);
+              _dbus_verbose ("Driver handler delayed message processing due to policy check\n");
+              return BUS_RESULT_LATER;
             }
         }
     }
@@ -2978,7 +3024,7 @@ bus_driver_handle_message (DBusConnection *connection,
                   "%s does not understand message %s",
                   DBUS_SERVICE_DBUS, name);
 
-  return FALSE;
+  return BUS_RESULT_FALSE;
 }
 
 void
@@ -3099,7 +3145,7 @@ interface_handler_find_property (const InterfaceHandler *ih,
   return NULL;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_get (DBusConnection *connection,
                        BusTransaction *transaction,
                        DBusMessage    *message,
@@ -3120,18 +3166,18 @@ bus_driver_handle_get (DBusConnection *connection,
                               DBUS_TYPE_STRING, &iface,
                               DBUS_TYPE_STRING, &prop,
                               DBUS_TYPE_INVALID))
-    return FALSE;
+    return BUS_RESULT_FALSE;
 
   /* We only implement Properties on /org/freedesktop/DBus so far. */
   ih = bus_driver_find_interface (iface, TRUE, error);
 
   if (ih == NULL)
-    return FALSE;
+    return BUS_RESULT_FALSE;
 
   handler = interface_handler_find_property (ih, prop, error);
 
   if (handler == NULL)
-    return FALSE;
+    return BUS_RESULT_FALSE;
 
   context = bus_transaction_get_context (transaction);
 
@@ -3159,17 +3205,17 @@ bus_driver_handle_get (DBusConnection *connection,
     goto oom;
 
   dbus_message_unref (reply);
-  return TRUE;
+  return BUS_RESULT_TRUE;
 
 oom:
   if (reply != NULL)
     dbus_message_unref (reply);
 
   BUS_SET_OOM (error);
-  return FALSE;
+  return BUS_RESULT_FALSE;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_get_all (DBusConnection *connection,
                            BusTransaction *transaction,
                            DBusMessage    *message,
@@ -3188,13 +3234,13 @@ bus_driver_handle_get_all (DBusConnection *connection,
   if (!dbus_message_get_args (message, error,
                               DBUS_TYPE_STRING, &iface,
                               DBUS_TYPE_INVALID))
-    return FALSE;
+    return BUS_RESULT_FALSE;
 
   /* We only implement Properties on /org/freedesktop/DBus so far. */
   ih = bus_driver_find_interface (iface, TRUE, error);
 
   if (ih == NULL)
-    return FALSE;
+    return BUS_RESULT_FALSE;
 
   context = bus_transaction_get_context (transaction);
 
@@ -3229,7 +3275,7 @@ bus_driver_handle_get_all (DBusConnection *connection,
     goto oom;
 
   dbus_message_unref (reply);
-  return TRUE;
+  return BUS_RESULT_TRUE;
 
 oom_abandon_message:
   _dbus_asv_abandon (&reply_iter, &array_iter);
@@ -3239,10 +3285,10 @@ oom:
     dbus_message_unref (reply);
 
   BUS_SET_OOM (error);
-  return FALSE;
+  return BUS_RESULT_FALSE;
 }
 
-static dbus_bool_t
+static BusResult
 bus_driver_handle_set (DBusConnection *connection,
                        BusTransaction *transaction,
                        DBusMessage    *message,
@@ -3271,15 +3317,15 @@ bus_driver_handle_set (DBusConnection *connection,
   ih = bus_driver_find_interface (iface, TRUE, error);
 
   if (ih == NULL)
-    return FALSE;
+    return BUS_RESULT_FALSE;
 
   handler = interface_handler_find_property (ih, prop, error);
 
   if (handler == NULL)
-    return FALSE;
+    return BUS_RESULT_FALSE;
 
   /* We don't implement any properties that can be set yet. */
   dbus_set_error (error, DBUS_ERROR_PROPERTY_READ_ONLY,
                   "Property '%s.%s' cannot be set", iface, prop);
-  return FALSE;
+  return BUS_RESULT_FALSE;
 }
