@@ -36,7 +36,7 @@
 
 #ifdef DBUS_ENABLE_STATS
 
-dbus_bool_t
+BusResult
 bus_stats_handle_get_stats (DBusConnection *connection,
                             BusTransaction *transaction,
                             DBusMessage    *message,
@@ -50,6 +50,9 @@ bus_stats_handle_get_stats (DBusConnection *connection,
   dbus_uint32_t in_use, in_free_list, allocated;
 
   _DBUS_ASSERT_ERROR_IS_CLEAR (error);
+
+  if (!bus_driver_check_message_is_for_us (message, error))
+    return BUS_RESULT_FALSE;
 
   context = bus_transaction_get_context (transaction);
   connections = bus_context_get_connections (context);
@@ -104,17 +107,17 @@ bus_stats_handle_get_stats (DBusConnection *connection,
     goto oom;
 
   dbus_message_unref (reply);
-  return TRUE;
+  return BUS_RESULT_TRUE;
 
 oom:
   if (reply != NULL)
     dbus_message_unref (reply);
 
   BUS_SET_OOM (error);
-  return FALSE;
+  return BUS_RESULT_FALSE;
 }
 
-dbus_bool_t
+BusResult
 bus_stats_handle_get_connection_stats (DBusConnection *caller_connection,
                                        BusTransaction *transaction,
                                        DBusMessage    *message,
@@ -209,7 +212,7 @@ bus_stats_handle_get_connection_stats (DBusConnection *caller_connection,
     goto oom;
 
   dbus_message_unref (reply);
-  return TRUE;
+  return BUS_RESULT_TRUE;
 
 oom:
   BUS_SET_OOM (error);
@@ -218,11 +221,11 @@ failed:
   if (reply != NULL)
     dbus_message_unref (reply);
 
-  return FALSE;
+  return BUS_RESULT_FALSE;
 }
 
 
-dbus_bool_t
+BusResult
 bus_stats_handle_get_all_match_rules (DBusConnection *caller_connection,
                                       BusTransaction *transaction,
                                       DBusMessage    *message,
@@ -246,7 +249,7 @@ bus_stats_handle_get_all_match_rules (DBusConnection *caller_connection,
   matchmaker = bus_context_get_matchmaker (context);
 
   if (!bus_registry_list_services (registry, &services, &services_len))
-    return FALSE;
+    return BUS_RESULT_FALSE;
 
   reply = dbus_message_new_method_return (message);
   if (reply == NULL)
@@ -325,7 +328,7 @@ bus_stats_handle_get_all_match_rules (DBusConnection *caller_connection,
 
   dbus_message_unref (reply);
   dbus_free_string_array (services);
-  return TRUE;
+  return BUS_RESULT_TRUE;
 
 oom:
   if (reply != NULL)
@@ -334,7 +337,7 @@ oom:
   dbus_free_string_array (services);
 
   BUS_SET_OOM (error);
-  return FALSE;
+  return BUS_RESULT_FALSE;
 }
 
 #endif

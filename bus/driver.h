@@ -35,7 +35,7 @@ typedef enum
 } BusDriverFound;
 
 void        bus_driver_remove_connection     (DBusConnection *connection);
-dbus_bool_t bus_driver_handle_message        (DBusConnection *connection,
+BusResult   bus_driver_handle_message        (DBusConnection *connection,
                                               BusTransaction *transaction,
                                               DBusMessage    *message,
                                               DBusError      *error);
