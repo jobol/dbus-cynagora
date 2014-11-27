@@ -194,6 +194,7 @@ bus_config_parser_start_element (BusConfigParser   *parser,
     case ELEMENT_POLICY:
     case ELEMENT_LIMIT:
     case ELEMENT_ALLOW:
+    case ELEMENT_CHECK:
     case ELEMENT_DENY:
     case ELEMENT_FORK:
     case ELEMENT_PIDFILE:
@@ -316,6 +317,7 @@ bus_config_parser_content (BusConfigParser   *parser,
     case ELEMENT_POLICY:
     case ELEMENT_LIMIT:
     case ELEMENT_ALLOW:
+    case ELEMENT_CHECK:
     case ELEMENT_DENY:
     case ELEMENT_FORK:
     case ELEMENT_PIDFILE:
