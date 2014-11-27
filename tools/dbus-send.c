@@ -458,7 +458,7 @@ main (int argc, char *argv[])
       char *arg;
       char *c;
       int type;
-      int secondary_type;
+      int secondary_type = 0;
       int container_type;
       DBusMessageIter *target_iter;
       DBusMessageIter container_iter;
