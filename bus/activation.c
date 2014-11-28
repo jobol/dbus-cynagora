@@ -32,6 +32,7 @@
 #include "services.h"
 #include "test.h"
 #include "utils.h"
+#include <dbus/dbus-connection-internal.h>
 #include <dbus/dbus-internals.h>
 #include <dbus/dbus-hash.h>
 #include <dbus/dbus-list.h>
@@ -94,6 +95,8 @@ struct BusPendingActivationEntry
   DBusConnection *connection;
 
   dbus_bool_t auto_activation;
+
+  dbus_bool_t is_put_back;
 };
 
 typedef struct
@@ -1241,20 +1244,23 @@ bus_activation_send_pending_auto_activation_messages (BusActivation  *activation
       BusPendingActivationEntry *entry = link->data;
       DBusList *next = _dbus_list_get_next_link (&pending_activation->entries, link);
 
-      if (entry->auto_activation && (entry->connection == NULL || dbus_connection_get_is_connected (entry->connection)))
+      if (entry->auto_activation && !entry->is_put_back &&
+          (entry->connection == NULL || dbus_connection_get_is_connected (entry->connection)))
         {
           DBusConnection *addressed_recipient;
           DBusError error;
+          BusResult res;
 
           dbus_error_init (&error);
 
           addressed_recipient = bus_service_get_primary_owners_connection (service);
 
           /* Resume dispatching where we left off in bus_dispatch() */
-          if (!bus_dispatch_matches (transaction,
-                                     entry->connection,
-                                     addressed_recipient,
-                                     entry->activation_message, &error))
+          res = bus_dispatch_matches (transaction,
+                                      entry->connection,
+                                      addressed_recipient,
+                                      entry->activation_message, &error);
+          if (res == BUS_RESULT_FALSE)
             {
               /* If permission is denied, we just want to return the error
                * to the original method invoker; in particular, we don't
@@ -1266,10 +1272,43 @@ bus_activation_send_pending_auto_activation_messages (BusActivation  *activation
                   bus_connection_send_oom_error (entry->connection,
                                                  entry->activation_message);
                 }
-
               dbus_error_free (&error);
               link = next;
               continue;
+            }
+          else if (res == BUS_RESULT_LATER)
+            {
+              DBusList *putback_message_link = link;
+              DBusMessage *last_inserted_message = NULL;
+
+              /* NULL entry->connection implies sending pending ActivationRequest message to systemd */
+              if (entry->connection == NULL)
+                {
+                  _dbus_assert_not_reached ("bus_dispatch_matches returned BUS_RESULT_LATER unexpectedly when sender is NULL");
+                  link = next;
+                  continue;
+                }
+
+              /**
+               * Getting here means that policy check result is not yet available and dispatching
+               * messages from entry->connection has been disabled.
+               * Let's put back all messages for the given connection in the incoming queue and mark
+               * this entry as put back so they are not handled twice.
+               */
+              while (putback_message_link != NULL)
+                {
+                  BusPendingActivationEntry *putback_message = putback_message_link->data;
+                  if (putback_message->connection == entry->connection)
+                    {
+                      if (!_dbus_connection_putback_message (putback_message->connection, last_inserted_message,
+                            putback_message->activation_message, &error))
+                        goto error;
+                      last_inserted_message = putback_message->activation_message;
+                      putback_message->is_put_back = TRUE;
+                    }
+
+                  putback_message_link = _dbus_list_get_next_link(&pending_activation->entries, putback_message_link);
+                }
             }
         }
 
@@ -1287,6 +1326,19 @@ bus_activation_send_pending_auto_activation_messages (BusActivation  *activation
   return TRUE;
 
  error:
+  /* remove all messages that have been put to connections' incoming queues */
+  link = _dbus_list_get_first_link (&pending_activation->entries);
+  while (link != NULL)
+    {
+      BusPendingActivationEntry *entry = link->data;
+      if (entry->is_put_back)
+        {
+          _dbus_connection_remove_message(entry->connection, entry->activation_message);
+          entry->is_put_back = FALSE;
+        }
+      link = _dbus_list_get_next_link(&pending_activation->entries, link);
+    }
+
   return FALSE;
 }
 
@@ -2079,6 +2131,7 @@ bus_activation_activate_service (BusActivation  *activation,
 
           if (service != NULL)
             {
+              BusResult res;
               bus_context_log (activation->context,
                                DBUS_SYSTEM_LOG_INFO, "Activating via systemd: service name='%s' unit='%s' requested by '%s' (%s)",
                                service_name,
@@ -2086,8 +2139,17 @@ bus_activation_activate_service (BusActivation  *activation,
                                bus_connection_get_name (connection),
                                bus_connection_get_loginfo (connection));
               /* Wonderful, systemd is connected, let's just send the msg */
-              retval = bus_dispatch_matches (activation_transaction, NULL,
+              res = bus_dispatch_matches (activation_transaction, NULL,
                                              systemd, message, error);
+
+              if (res == BUS_RESULT_TRUE)
+                retval = TRUE;
+              else
+                {
+                  retval = FALSE;
+                  if (res == BUS_RESULT_LATER)
+                    _dbus_verbose("Unexpectedly need time to check message from bus driver to systemd - dropping the message.\n");
+                }
             }
           else
             {
