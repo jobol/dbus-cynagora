@@ -33,6 +33,7 @@
 #include "utils.h"
 #include "bus.h"
 #include "signals.h"
+#include "dispatch.h"
 #include "test.h"
 #include <dbus/dbus-internals.h>
 #include <dbus/dbus-connection-internal.h>
@@ -77,7 +78,7 @@ send_one_message (DBusConnection *connection,
                                           NULL,
                                           &stack_error,
                                           &deferred_message);
-  if (result != BUS_RESULT_TRUE)
+  if (result == BUS_RESULT_FALSE)
     {
       if (!bus_transaction_capture_error_reply (transaction, sender,
                                                 &stack_error, message))
@@ -112,9 +113,19 @@ send_one_message (DBusConnection *connection,
       return TRUE; /* don't send it but don't return an error either */
     }
 
+  if (result == BUS_RESULT_LATER)
+    {
+      if (!bus_deferred_message_queue_at_recipient(deferred_message, transaction, FALSE, FALSE))
+        {
+          BUS_SET_OOM (error);
+          return FALSE;
+        }
+      return TRUE; /* pretend to have sent it */
+    }
+
   if (!bus_transaction_send (transaction,
                              connection,
-                             message))
+                             message, FALSE))
     {
       BUS_SET_OOM (error);
       return FALSE;
@@ -124,11 +135,12 @@ send_one_message (DBusConnection *connection,
 }
 
 BusResult
-bus_dispatch_matches (BusTransaction *transaction,
-                      DBusConnection *sender,
-                      DBusConnection *addressed_recipient,
-                      DBusMessage    *message,
-                      DBusError      *error)
+bus_dispatch_matches (BusTransaction     *transaction,
+                      DBusConnection     *sender,
+                      DBusConnection     *addressed_recipient,
+                      DBusMessage        *message,
+                      BusDeferredMessage *dispatched_deferred_message,
+                      DBusError          *error)
 {
   DBusError tmp_error;
   BusConnections *connections;
@@ -137,7 +149,6 @@ bus_dispatch_matches (BusTransaction *transaction,
   DBusList *link;
   BusContext *context;
   BusDeferredMessage *deferred_message;
-  BusResult res;
 
   _DBUS_ASSERT_ERROR_IS_CLEAR (error);
 
@@ -153,16 +164,80 @@ bus_dispatch_matches (BusTransaction *transaction,
   /* First, send the message to the addressed_recipient, if there is one. */
   if (addressed_recipient != NULL)
     {
-      res = bus_context_check_security_policy (context, transaction,
+      BusResult result;
+      /* To maintain message order message needs to be appended at the recipient if there are already
+       *  deferred messages and we are not doing deferred dispatch
+       */
+      if (dispatched_deferred_message == NULL && bus_connection_has_deferred_messages(addressed_recipient))
+        {
+          deferred_message = bus_deferred_message_new(message, sender,
+              addressed_recipient, addressed_recipient, BUS_RESULT_LATER);
+
+          if (deferred_message == NULL)
+            {
+              BUS_SET_OOM(error);
+              return BUS_RESULT_FALSE;
+            }
+
+          if (!bus_deferred_message_queue_at_recipient(deferred_message, transaction, TRUE, FALSE))
+            {
+              bus_deferred_message_unref(deferred_message);
+              BUS_SET_OOM(error);
+              return BUS_RESULT_FALSE;
+            }
+
+          bus_deferred_message_unref(deferred_message);
+          return BUS_RESULT_TRUE; /* pretend to have sent it */
+        }
+
+      if (dispatched_deferred_message != NULL)
+        {
+          result = bus_deferred_message_get_response(dispatched_deferred_message);
+          if (result == BUS_RESULT_TRUE)
+            {
+              /* if we know the result of policy check we still need to check if message limits
+               * are not exceeded. It is also required to add entry in expected replies list if
+               * this is a method call
+               */
+              if (!bus_deferred_message_check_message_limits(dispatched_deferred_message, error))
+                return BUS_RESULT_FALSE;
+
+              if (!bus_deferred_message_expect_method_reply(dispatched_deferred_message, transaction, error))
+                return BUS_RESULT_FALSE;
+            }
+          else if (result == BUS_RESULT_FALSE)
+            {
+              bus_deferred_message_create_error(dispatched_deferred_message, "Rejected message", error);
+              return BUS_RESULT_FALSE;
+            }
+        }
+      else
+        result = BUS_RESULT_LATER;
+
+      if (result == BUS_RESULT_LATER)
+        result = bus_context_check_security_policy (context, transaction,
                                                sender, addressed_recipient,
                                                addressed_recipient,
                                                message, NULL, error,
                                                &deferred_message);
-      if (res == BUS_RESULT_FALSE)
+
+      if (result == BUS_RESULT_FALSE)
         return BUS_RESULT_FALSE;
-      else if (res == BUS_RESULT_LATER)
+      else if (result == BUS_RESULT_LATER)
         {
           BusDeferredMessageStatus status;
+
+          if (dispatched_deferred_message != NULL)
+            {
+              /* for deferred dispatch prepend message at the recipient */
+              if (!bus_deferred_message_queue_at_recipient(deferred_message, transaction, TRUE, TRUE))
+                {
+                  BUS_SET_OOM(error);
+                  return BUS_RESULT_FALSE;
+                }
+              return BUS_RESULT_TRUE; /* pretend to have sent it */
+            }
+
           status = bus_deferred_message_get_status(deferred_message);
 
           if (status & BUS_DEFERRED_MESSAGE_CHECK_SEND)
@@ -173,13 +248,18 @@ bus_dispatch_matches (BusTransaction *transaction,
             }
           else if (status & BUS_DEFERRED_MESSAGE_CHECK_RECEIVE)
             {
-              dbus_set_error (error, DBUS_ERROR_ACCESS_DENIED,
-                              "Rejecting message because time is needed to check security policy");
-              return BUS_RESULT_FALSE;
+              /* receive rule result not available - queue message at the recipient */
+              if (!bus_deferred_message_queue_at_recipient(deferred_message, transaction, TRUE, FALSE))
+                {
+                  BUS_SET_OOM(error);
+                  return BUS_RESULT_FALSE;
+                }
+
+              return BUS_RESULT_TRUE; /* pretend to have sent it */
             }
           else
             {
-              _dbus_verbose("deferred message has no status field set to send or receive unexpectedly\n");
+              _dbus_verbose("deferred message has no status field set unexpectedly\n");
               return BUS_RESULT_FALSE;
             }
         }
@@ -196,7 +276,8 @@ bus_dispatch_matches (BusTransaction *transaction,
         }
 
       /* Dispatch the message */
-      if (!bus_transaction_send (transaction, addressed_recipient, message))
+      if (!bus_transaction_send(transaction, addressed_recipient, message,
+          dispatched_deferred_message != NULL ? TRUE : FALSE))
         {
           BUS_SET_OOM (error);
           return BUS_RESULT_FALSE;
@@ -534,7 +615,7 @@ bus_dispatch (DBusConnection *connection,
    * match rules.
    */
   if (BUS_RESULT_LATER == bus_dispatch_matches (transaction, connection, addressed_recipient,
-                                                message, &error))
+                                                message, NULL, &error))
     {
       /* Roll back and dispatch the message once the policy result is available */
       bus_transaction_cancel_and_free (transaction);
