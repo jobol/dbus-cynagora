@@ -1840,22 +1840,32 @@ bus_activation_activate_service (BusActivation  *activation,
     }
 
   if (auto_activation &&
-      entry != NULL &&
-      BUS_RESULT_TRUE != bus_context_check_security_policy (activation->context,
-        transaction,
-        connection, /* sender */
-        NULL, /* addressed recipient */
-        NULL, /* proposed recipient */
-        activation_message,
-        entry,
-        error,
-        NULL))
-    {
-      _DBUS_ASSERT_ERROR_IS_SET (error);
-      _dbus_verbose ("activation not authorized: %s: %s\n",
-          error != NULL ? error->name : "(error ignored)",
-          error != NULL ? error->message : "(error ignored)");
-      return FALSE;
+      entry != NULL)
+   {
+      BusResult result;
+
+      result = bus_context_check_security_policy (activation->context,
+                      transaction,
+                      connection, /* sender */
+                      NULL, /* addressed recipient */
+                      NULL, /* proposed recipient */
+                      activation_message,
+                      entry,
+                      error,
+                      NULL);
+      if (result == BUS_RESULT_FALSE)
+        {
+          _DBUS_ASSERT_ERROR_IS_SET (error);
+          _dbus_verbose ("activation not authorized: %s: %s\n",
+              error != NULL ? error->name : "(error ignored)",
+              error != NULL ? error->message : "(error ignored)");
+          return FALSE;
+        }
+      if (result == BUS_RESULT_LATER)
+        {
+          /* TODO */
+          _dbus_verbose ("ALERT FIX ME!!!!!!!!!!!!!!!");
+        }
     }
 
   /* Bypass the registry lookup if we're auto-activating, bus_dispatch would not
