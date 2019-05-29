@@ -4364,7 +4364,11 @@ _dbus_daemon_unpublish_session_bus_address (void)
 dbus_bool_t
 _dbus_get_is_errno_eagain_or_ewouldblock (int e)
 {
+#if EAGAIN != EWOULDBLOCK
   return e == EAGAIN || e == EWOULDBLOCK;
+#else
+  return e == EAGAIN;
+#endif
 }
 
 /**

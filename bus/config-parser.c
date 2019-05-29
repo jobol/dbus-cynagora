@@ -3408,6 +3408,7 @@ elements_equal (const Element *a,
     case ELEMENT_LISTEN:
     case ELEMENT_AUTH:
     case ELEMENT_ALLOW:
+    case ELEMENT_CHECK:
     case ELEMENT_DENY:
     case ELEMENT_FORK:
     case ELEMENT_PIDFILE:

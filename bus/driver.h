@@ -66,5 +66,7 @@ dbus_bool_t bus_driver_send_ack_reply     (DBusConnection  *connection,
                                            BusTransaction  *transaction,
                                            DBusMessage     *message,
                                            DBusError       *error);
+dbus_bool_t bus_driver_check_message_is_for_us (DBusMessage *message,
+                                                DBusError   *error);
 
 #endif /* BUS_DRIVER_H */

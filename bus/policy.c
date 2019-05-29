@@ -1098,6 +1098,7 @@ bus_client_policy_check_can_send (DBusConnection      *sender,
         case BUS_POLICY_RULE_ACCESS_ALLOW:
           result = BUS_RESULT_TRUE;
           break;
+        default:
         case BUS_POLICY_RULE_ACCESS_DENY:
           result = BUS_RESULT_FALSE;
           break;
@@ -1350,6 +1351,7 @@ bus_client_policy_check_can_receive (BusClientPolicy     *policy,
         case BUS_POLICY_RULE_ACCESS_ALLOW:
           result = BUS_RESULT_TRUE;
           break;
+        default:
         case BUS_POLICY_RULE_ACCESS_DENY:
           result = BUS_RESULT_FALSE;
           break;
@@ -1443,6 +1445,7 @@ bus_rules_check_can_own (DBusList *rules,
       case BUS_POLICY_RULE_ACCESS_ALLOW:
         result = BUS_RESULT_TRUE;
         break;
+      default:
       case BUS_POLICY_RULE_ACCESS_DENY:
         result = BUS_RESULT_FALSE;
         break;

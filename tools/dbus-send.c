@@ -293,10 +293,12 @@ main (int argc, char *argv[])
             {
               is_bus = TRUE;
             }
+#if 0
           else if (arg[2] == 'p') /* peer */
             {
               is_bus = FALSE;
             }
+#endif
           else /* address; keeping backwards compatibility */
             {
               is_bus = FALSE;
