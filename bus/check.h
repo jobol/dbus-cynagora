@@ -93,6 +93,7 @@ void                bus_deferred_message_set_policy_check_info (BusDeferredMessa
                                                                 const char *privilege);
 dbus_bool_t         bus_deferred_message_check_message_limits (BusDeferredMessage *deferred_message,
                                                                DBusError *error);
+void                bus_deferred_message_abort                (BusDeferredMessage *deferred_message);
 
 
 #ifdef DBUS_ENABLE_EMBEDDED_TESTS

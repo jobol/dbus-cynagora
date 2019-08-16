@@ -47,6 +47,7 @@
 #define MAX_LOG_COMMAND_LEN 50
 
 static void bus_connection_remove_transactions (DBusConnection *connection);
+static void bus_connection_clear_deferred_messages (DBusConnection *connection);
 
 typedef struct
 {
@@ -2821,17 +2822,7 @@ bus_connection_pop_deferred_message (DBusConnection *connection)
   return NULL;
 }
 
-dbus_bool_t
-bus_connection_putback_deferred_message (DBusConnection *connection, BusDeferredMessage *message)
-{
-  BusConnectionData *d = BUS_CONNECTION_DATA(connection);
-  if (_dbus_list_prepend(&d->deferred_messages, message))
-    {
-      return TRUE;
-    }
-  return FALSE;
-}
-
+static
 void
 bus_connection_clear_deferred_messages (DBusConnection *connection)
 {
@@ -2846,6 +2837,7 @@ bus_connection_clear_deferred_messages (DBusConnection *connection)
       next = _dbus_list_get_next_link (&d->deferred_messages, link);
       message = link->data;
 
+      bus_deferred_message_abort(message);
       bus_deferred_message_unref(message);
       _dbus_list_remove_link(&d->deferred_messages, link);
 

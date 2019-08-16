@@ -617,3 +617,8 @@ bus_deferred_message_response_received (BusDeferredMessage *deferred_message,
     }
 }
 
+void
+bus_deferred_message_abort (BusDeferredMessage *deferred_message)
+{
+  deferred_message->response_callback = NULL;
+}
