@@ -90,15 +90,12 @@ dbus_bool_t         bus_connection_queue_deferred_message   (DBusConnection *con
                                                              BusDeferredMessage *message,
                                                              dbus_bool_t prepend);
 BusDeferredMessage *bus_connection_pop_deferred_message     (DBusConnection *connection);
-dbus_bool_t         bus_connection_putback_deferred_message (DBusConnection *connection,
-                                                             BusDeferredMessage *message);
 void                bus_connection_remove_deferred_message  (DBusConnection *connection,
                                                              BusDeferredMessage *message);
 dbus_bool_t         bus_connection_replace_deferred_message (DBusConnection *connection,
                                                              BusDeferredMessage *oldMessage,
                                                              BusDeferredMessage *newMessage);
 void                bus_connection_dispatch_deferred        (DBusConnection *connection);
-void                bus_connection_clear_deferred_messages  (DBusConnection *connection);
 
 
 /* called by signals.c */
