@@ -38,10 +38,6 @@
 #include <dbus/dbus-connection-internal.h>
 #include <dbus/dbus-internals.h>
 #include <dbus/dbus-message-internal.h>
-#ifdef DBUS_ENABLE_CYNARA
-#include <stdlib.h>
-#include <cynara-session.h>
-#endif
 
 /* Trim executed commands to this length; we want to keep logs readable */
 #define MAX_LOG_COMMAND_LEN 50
@@ -124,9 +120,6 @@ typedef struct
 
   /** non-NULL if and only if this is a monitor */
   DBusList *link_in_monitors;
-#ifdef DBUS_ENABLE_CYNARA
-  char *cynara_session_id;
-#endif
 } BusConnectionData;
 
 static dbus_bool_t bus_pending_reply_expired (BusExpireList *list,
@@ -461,10 +454,6 @@ free_connection_data (void *data)
   
   dbus_free (d->name);
   
-#ifdef DBUS_ENABLE_CYNARA
-  free (d->cynara_session_id);
-#endif
-
   dbus_free (d);
 }
 
@@ -1094,22 +1083,6 @@ bus_connection_get_policy (DBusConnection *connection)
   
   return d->policy;
 }
-
-#ifdef DBUS_ENABLE_CYNARA
-const char *bus_connection_get_cynara_session_id (DBusConnection *connection)
-{
-  BusConnectionData *d = BUS_CONNECTION_DATA (connection);
-  _dbus_assert (d != NULL);
-
-  if (d->cynara_session_id == NULL)
-    {
-      unsigned long pid;
-      if (dbus_connection_get_unix_process_id(connection, &pid))
-        d->cynara_session_id = cynara_session_from_pid(pid);
-    }
-  return d->cynara_session_id;
-}
-#endif
 
 static dbus_bool_t
 foreach_active (BusConnections               *connections,

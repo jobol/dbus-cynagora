@@ -13,7 +13,7 @@ DBUS_BUS_LIBS = \
 	$(THREAD_LIBS) \
 	$(ADT_LIBS) \
 	$(NETWORK_libs) \
-	$(CYNARA_LIBS) \
+	$(CYNAGORA_LIBS) \
 	$(NULL)
 
 DBUS_LAUNCHER_LIBS = \
@@ -31,7 +31,7 @@ AM_CPPFLAGS = \
 	$(APPARMOR_CFLAGS) \
 	-DDBUS_SYSTEM_CONFIG_FILE=\""$(dbusdatadir)/system.conf"\" \
 	-DDBUS_COMPILATION \
-	$(CYNARA_CFLAGS) \
+	$(CYNAGORA_CFLAGS) \
 	$(NULL)
 
 # if assertions are enabled, improve backtraces
@@ -101,8 +101,8 @@ BUS_SOURCES=					\
 	config-parser-common.h			\
 	connection.c				\
 	connection.h				\
-	cynara.c				\
-	cynara.h				\
+	cynagora-check.c			\
+	cynagora-check.h			\
 	desktop-file.c				\
 	desktop-file.h				\
 	$(DIR_WATCH_SOURCE)			\

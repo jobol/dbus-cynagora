@@ -1,5 +1,5 @@
 /* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*- */
-/* cynara.h  Cynara runtime privilege checking
+/* cynagora.h  Cynagora runtime privilege checking
  *
  * Copyright (c) 2014 Samsung Electronics, Ltd.
  *
@@ -24,10 +24,10 @@
 #include "bus.h"
 #include "check.h"
 
-BusCynara *bus_cynara_new             (BusCheck *check, DBusError *error);
-BusCynara *bus_cynara_ref             (BusCynara *cynara);
-void       bus_cynara_unref           (BusCynara *cynara);
-BusResult  bus_cynara_check_privilege (BusCynara *cynara,
+BusCynagora *bus_cynagora_new             (BusCheck *check, DBusError *error);
+BusCynagora *bus_cynagora_ref             (BusCynagora *cynagora);
+void       bus_cynagora_unref           (BusCynagora *cynagora);
+BusResult  bus_cynagora_check_privilege (BusCynagora *cynagora,
                                        DBusMessage *message,
                                        DBusConnection *sender,
                                        DBusConnection *addressed_recipient,

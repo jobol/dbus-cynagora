@@ -72,10 +72,10 @@
            send_interface="org.freedesktop.DBus.Introspectable"/>
     <allow send_destination="org.freedesktop.DBus"
            send_interface="org.freedesktop.DBus.Properties"/>
-    <!-- If there is a need specific bus services could be protected by Cynara as well.
+    <!-- If there is a need specific bus services could be protected by Cynagora as well.
          However, this can lead to deadlock during the boot process when such check is made and
-         Cynara is not yet activated (systemd calls protected method synchronously,
-         dbus daemon tries to consult Cynara, Cynara waits for systemd activation).
+         Cynagora is not yet activated (systemd calls protected method synchronously,
+         dbus daemon tries to consult Cynagora, Cynagora waits for systemd activation).
          Therefore it is advised to allow root processes to use bus services.
          Currently anyone is allowed to talk to the message bus -->
     <allow receive_sender="org.freedesktop.DBus"/>

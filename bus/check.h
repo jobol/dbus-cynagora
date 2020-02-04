@@ -45,7 +45,7 @@ BusCheck   *bus_check_ref         (BusCheck *check);
 void        bus_check_unref       (BusCheck *check);
 
 BusContext *bus_check_get_context (BusCheck *check);
-BusCynara  *bus_check_get_cynara  (BusCheck *check);
+BusCynagora  *bus_check_get_cynagora  (BusCheck *check);
 BusResult   bus_check_privilege   (BusCheck *check,
                                    DBusMessage *message,
                                    DBusConnection *sender,

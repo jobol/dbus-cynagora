@@ -26,7 +26,7 @@
 #include "check.h"
 #include "connection.h"
 #include "dispatch.h"
-#include "cynara.h"
+#include "cynagora-check.h"
 #include "utils.h"
 #include <dbus/dbus-connection-internal.h>
 #include <dbus/dbus-message-internal.h>
@@ -38,7 +38,7 @@ typedef struct BusCheck
   int refcount;
 
   BusContext *context;
-  BusCynara *cynara;
+  BusCynagora *cynagora;
 } BusCheck;
 
 typedef struct BusDeferredMessage
@@ -81,7 +81,7 @@ bus_check_new (BusContext *context, DBusError *error)
 
   check->refcount = 1;
   check->context = context;
-  check->cynara = bus_cynara_new(check, error);
+  check->cynagora = bus_cynagora_new(check, error);
   if (dbus_error_is_set(error))
     {
       dbus_message_free_data_slot(&deferred_message_data_slot);
@@ -110,7 +110,7 @@ bus_check_unref (BusCheck *check)
 
   if (check->refcount == 0)
     {
-      bus_cynara_unref(check->cynara);
+      bus_cynagora_unref(check->cynagora);
       dbus_message_free_data_slot(&deferred_message_data_slot);
       dbus_free(check);
     }
@@ -122,10 +122,10 @@ bus_check_get_context (BusCheck *check)
   return check->context;
 }
 
-BusCynara *
-bus_check_get_cynara (BusCheck *check)
+BusCynagora *
+bus_check_get_cynagora (BusCheck *check)
 {
-  return check->cynara;
+  return check->cynagora;
 }
 
 static void
@@ -276,8 +276,8 @@ bus_check_privilege (BusCheck *check,
 {
   BusDeferredMessage *previous_deferred_message;
   BusResult result = BUS_RESULT_FALSE;
-#ifdef DBUS_ENABLE_CYNARA
-  BusCynara *cynara;
+#ifdef DBUS_ENABLE_CYNAGORA
+  BusCynagora *cynagora;
 #endif
   DBusConnection *connection;
 
@@ -304,7 +304,7 @@ bus_check_privilege (BusCheck *check,
            * Message has been deferred due to receive or own rule which means that sending this message
            * is allowed - it must have been checked previously.
            * This might happen when client calls RequestName method which depending on security
-           * policy might result in both "can_send" and "can_own" Cynara checks.
+           * policy might result in both "can_send" and "can_own" Cynagora checks.
            */
           result = BUS_RESULT_TRUE;
         }
@@ -327,9 +327,9 @@ bus_check_privilege (BusCheck *check,
   else
     {
       /* ask policy checkers */
-#ifdef DBUS_ENABLE_CYNARA
-      cynara = bus_check_get_cynara(check);
-      result = bus_cynara_check_privilege(cynara, message, sender, addressed_recipient,
+#ifdef DBUS_ENABLE_CYNAGORA
+      cynagora = bus_check_get_cynagora(check);
+      result = bus_cynagora_check_privilege(cynagora, message, sender, addressed_recipient,
           proposed_recipient, privilege, check_type, deferred_message);
 #endif
       if (result == BUS_RESULT_LATER && deferred_message != NULL)

@@ -138,9 +138,6 @@ dbus_bool_t bus_connection_be_monitor (DBusConnection  *connection,
                                        BusTransaction  *transaction,
                                        DBusList       **rules,
                                        DBusError       *error);
-#ifdef DBUS_ENABLE_CYNARA
-const char *bus_connection_get_cynara_session_id (DBusConnection *connection);
-#endif
 
 /* transaction API so we can send or not send a block of messages as a whole */
 

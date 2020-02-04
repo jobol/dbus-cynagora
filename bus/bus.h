@@ -47,7 +47,7 @@ typedef struct BusMatchRule     BusMatchRule;
 typedef struct BusActivationEntry BusActivationEntry;
 typedef struct BusCheck         BusCheck;
 typedef struct BusDeferredMessage BusDeferredMessage;
-typedef struct BusCynara        BusCynara;
+typedef struct BusCynagora        BusCynagora;
 
 /**
  * BusResult is defined as a pointer to a dummy structure to allow detection of type mismatches.
